@@ -7,7 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -20,20 +19,17 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.0'
           channel: 'stable'
 
-      - name: Accept Android Licenses
-        run: yes | flutter doctor --android-licenses
-
-      - name: Get dependencies
-        run: flutter pub get
-
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          # Esto busca donde está el pubspec.yaml y entra ahí
+          cd $(find . -name pubspec.yaml -exec dirname {} \;)
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: "**/build/app/outputs/flutter-apk/app-release.apk"
