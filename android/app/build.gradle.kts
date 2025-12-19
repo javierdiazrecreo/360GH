@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.app360e2"
+        applicationId = "com.example.app360v12"
         minSdk = 21
         targetSdk = 34
         versionCode = 1
