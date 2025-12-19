@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.app360e"
+    namespace = "com.party360.app"
     compileSdk = 36 // Requisito para las nuevas librerías
     
     ndkVersion = flutter.ndkVersion
@@ -20,10 +20,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.app360v12"
+        applicationId = "com.party360.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 34
-        versionCode = 3
+        versionCode = 4
         versionName = "1.0"
         multiDexEnabled = true
     }

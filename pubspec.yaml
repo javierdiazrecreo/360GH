@@ -1,8 +1,8 @@
-name: app360e
-description: "A new Flutter project."
+name: App360e
+description: "Camara 360."
 publish_to: 'none'
 
-version: 1.0.0+18
+version: 1.0.0+19
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
