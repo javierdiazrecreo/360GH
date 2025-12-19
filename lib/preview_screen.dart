@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 import 'package:gal/gal.dart';
+import 'package:intl/intl.dart';
 
 class PreviewScreen extends StatefulWidget {
   final String filePath;
@@ -23,15 +24,12 @@ class _PreviewScreenState extends State<PreviewScreen> {
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  void dispose() { _controller.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Resultado")),
+      appBar: AppBar(title: const Text("Video Listo")),
       body: Column(
         children: [
           Expanded(
@@ -44,13 +42,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
                     color: Colors.black54,
                     child: Center(
                       child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20)),
-                        onPressed: () {
-                          setState(() => _mostrarBotonPlay = false);
-                          _controller.play();
-                        },
-                        icon: const Icon(Icons.play_circle_fill, size: 40),
-                        label: const Text("MOSTRAR VIDEO", style: TextStyle(fontSize: 20)),
+                        onPressed: () { setState(() => _mostrarBotonPlay = false); _controller.play(); },
+                        icon: const Icon(Icons.play_arrow, size: 40),
+                        label: const Text("REPRODUCIR", style: TextStyle(fontSize: 20)),
                       ),
                     ),
                   ),
@@ -62,15 +56,17 @@ class _PreviewScreenState extends State<PreviewScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.replay), label: const Text("REPETIR")),
+                TextButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close), label: const Text("DESCARTAR")),
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    await Gal.putVideo(widget.filePath);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Video guardado en la galería!")));
-                  }, 
-                  icon: const Icon(Icons.save), 
-                  label: const Text("GUARDAR"),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                  onPressed: () async {
+                    // Nombre automático: Video_20240520_1530.mp4
+                    String nombreFinal = "Video_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.mp4";
+                    await Gal.putVideo(widget.filePath, album: "App360");
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Guardado como: $nombreFinal")));
+                  }, 
+                  icon: const Icon(Icons.check), 
+                  label: const Text("GUARDAR EN GALERÍA"),
                 ),
               ],
             ),

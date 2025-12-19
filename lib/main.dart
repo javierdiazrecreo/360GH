@@ -1,160 +1,172 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-
-late List<CameraDescription> cameras;
+import 'package:intl/intl.dart';
+import 'preview_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  cameras = await availableCameras();
-  runApp(const MyApp());
+  final cameras = await availableCameras();
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(brightness: Brightness.dark, colorSchemeSeed: Colors.redAccent),
+    home: ConfigScreen(cameras: cameras),
+  ));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ConfigScreen extends StatefulWidget {
+  final List<CameraDescription> cameras;
+  const ConfigScreen({super.key, required this.cameras});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage(),
-    );
-  }
+  State<ConfigScreen> createState() => _ConfigScreenState();
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class _ConfigScreenState extends State<ConfigScreen> {
+  final _timerController = TextEditingController(text: "10");
+  final _ipController = TextEditingController(text: "192.168.1.100");
+  final _delayController = TextEditingController(text: "3");
+  
+  ResolutionPreset _resolucion = ResolutionPreset.high;
+  int _selectedCameraIndex = 0; // 0 suele ser trasera, 1 frontal
 
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  CameraController? _controller;
-
-  /// ==== CONFIGURACIÓN ====
-  CameraLensDirection cameraSide = CameraLensDirection.back;
-  ResolutionPreset resolution = ResolutionPreset.high;
-  bool recordAudio = false;
-  int videoDurationSeconds = 10;
-  int motorDelayMs = 500;
-  String motorUrl = "http://192.168.1.50/rotate";
-
-  bool isRecording = false;
-
-  /// ==== INICIALIZAR CÁMARA ====
-  Future<void> _initCamera() async {
-    final selectedCamera = cameras.firstWhere(
-      (c) => c.lensDirection == cameraSide,
-    );
-
-    _controller = CameraController(
-      selectedCamera,
-      resolution,
-      enableAudio: recordAudio,
-    );
-
-    await _controller!.initialize();
-  }
-
-  /// ==== GRABACIÓN 360 ====
-  Future<void> start360Capture() async {
-    if (isRecording) return;
-
-    setState(() => isRecording = true);
-
-    try {
-      await _initCamera();
-
-      // Arranca el motor
-      await http.get(Uri.parse(motorUrl));
-
-      // Delay motor → grabación
-      await Future.delayed(Duration(milliseconds: motorDelayMs));
-
-      // Ruta + nombre automático
-      final dir = await getExternalStorageDirectory();
-      final filePath =
-          "${dir!.path}/360_${DateTime.now().toIso8601String()}.mp4";
-
-      await _controller!.startVideoRecording();
-      await Future.delayed(Duration(seconds: videoDurationSeconds));
-      final file = await _controller!.stopVideoRecording();
-
-      // Guarda el archivo
-      await File(file.path).copy(filePath);
-    } catch (e) {
-      debugPrint("Error: $e");
-    } finally {
-      await _controller?.dispose();
-      _controller = null;
-      setState(() => isRecording = false);
-    }
-  }
-
-  /// ==== UI ====
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("App 360°")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      appBar: AppBar(title: const Text("Configuración 360 Pro")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(25.0),
         child: Column(
           children: [
-            // Cámara frontal / trasera
-            DropdownButton<CameraLensDirection>(
-              value: cameraSide,
-              items: const [
-                DropdownMenuItem(
-                  value: CameraLensDirection.back,
-                  child: Text("Cámara trasera"),
-                ),
-                DropdownMenuItem(
-                  value: CameraLensDirection.front,
-                  child: Text("Cámara frontal"),
-                ),
-              ],
-              onChanged: (v) => setState(() => cameraSide = v!),
-            ),
-
-            // Resolución
-            DropdownButton<ResolutionPreset>(
-              value: resolution,
-              items: const [
-                DropdownMenuItem(
-                  value: ResolutionPreset.medium,
-                  child: Text("720p"),
-                ),
-                DropdownMenuItem(
-                  value: ResolutionPreset.high,
-                  child: Text("1080p"),
-                ),
-                DropdownMenuItem(
-                  value: ResolutionPreset.veryHigh,
-                  child: Text("4K (si disponible)"),
-                ),
-              ],
-              onChanged: (v) => setState(() => resolution = v!),
-            ),
-
-            // Audio
-            SwitchListTile(
-              title: const Text("Grabar audio"),
-              value: recordAudio,
-              onChanged: (v) => setState(() => recordAudio = v),
-            ),
-
+            TextField(controller: _ipController, decoration: const InputDecoration(labelText: "IP Shelly Motor", prefixIcon: Icon(Icons.lan))),
+            const SizedBox(height: 15),
+            Row(children: [
+              Expanded(child: TextField(controller: _timerController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Duración Video (s)", prefixIcon: Icon(Icons.timer)))),
+              const SizedBox(width: 15),
+              Expanded(child: TextField(controller: _delayController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Delay Inicio (s)", prefixIcon: Icon(Icons.hourglass_top)))),
+            ]),
             const SizedBox(height: 20),
-
-            // Botón principal
+            DropdownButtonFormField<int>(
+              value: _selectedCameraIndex,
+              decoration: const InputDecoration(labelText: "Seleccionar Cámara", prefixIcon: Icon(Icons.camera_front)),
+              items: List.generate(widget.cameras.length, (i) => DropdownMenuItem(value: i, child: Text("Cámara ${i == 0 ? 'Trasera' : 'Frontal/Secundaria'}"))),
+              onChanged: (val) => setState(() => _selectedCameraIndex = val!),
+            ),
+            const SizedBox(height: 15),
+            DropdownButtonFormField<ResolutionPreset>(
+              value: _resolucion,
+              decoration: const InputDecoration(labelText: "Calidad de Video", prefixIcon: Icon(Icons.hd)),
+              items: const [
+                DropdownMenuItem(value: ResolutionPreset.medium, child: Text("720p (Normal)")),
+                DropdownMenuItem(value: ResolutionPreset.high, child: Text("1080p (Alta)")),
+                DropdownMenuItem(value: ResolutionPreset.ultraHigh, child: Text("4K (Ultra)")),
+              ],
+              onChanged: (val) => setState(() => _resolucion = val!),
+            ),
+            const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: isRecording ? null : start360Capture,
-              child: Text(isRecording ? "Grabando..." : "Iniciar 360°"),
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(60), backgroundColor: Colors.redAccent),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CameraScreen(
+                  camera: widget.cameras[_selectedCameraIndex],
+                  segundos: int.tryParse(_timerController.text) ?? 10,
+                  delay: int.tryParse(_delayController.text) ?? 3,
+                  ipMotor: _ipController.text,
+                  resolucion: _resolucion,
+                )));
+              },
+              child: const Text("INICIAR SISTEMA", style: TextStyle(color: Colors.white, fontSize: 18)),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class CameraScreen extends StatefulWidget {
+  final CameraDescription camera;
+  final int segundos;
+  final int delay;
+  final String ipMotor;
+  final ResolutionPreset resolucion;
+
+  const CameraScreen({super.key, required this.camera, required this.segundos, required this.delay, required this.ipMotor, required this.resolucion});
+
+  @override
+  State<CameraScreen> createState() => _CameraScreenState();
+}
+
+class _CameraScreenState extends State<CameraScreen> {
+  late CameraController _controller;
+  bool procesando = false;
+  int countdown = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = CameraController(widget.camera, widget.resolucion, enableAudio: true);
+    _controller.initialize().then((_) { if (mounted) setState(() {}); });
+  }
+
+  Future<void> ejecutarCiclo() async {
+    setState(() => procesando = true);
+    
+    // 1. Cuenta atrás
+    for (int i = widget.delay; i > 0; i--) {
+      setState(() => countdown = i);
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    setState(() => countdown = 0);
+
+    // 2. Encender Motor e iniciar grabación
+    try {
+      http.get(Uri.parse("http://${widget.ipMotor}/relay/0?turn=on")).timeout(const Duration(milliseconds: 500));
+    } catch (_) {}
+    
+    await Future.delayed(const Duration(milliseconds: 500)); // Delay técnico motor
+    await _controller.startVideoRecording();
+
+    // 3. Duración del video
+    await Future.delayed(Duration(seconds: widget.segundos));
+
+    // 4. Parar todo
+    XFile video = await _controller.stopVideoRecording();
+    try {
+      http.get(Uri.parse("http://${widget.ipMotor}/relay/0?turn=off")).timeout(const Duration(milliseconds: 500));
+    } catch (_) {}
+
+    if (mounted) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (context) => PreviewScreen(filePath: video.path),
+      ));
+    }
+  }
+
+  @override
+  void dispose() { _controller.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_controller.value.isInitialized) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return Scaffold(
+      body: Stack(
+        children: [
+          CameraPreview(_controller),
+          if (countdown > 0) Center(child: Text("$countdown", style: const TextStyle(fontSize: 150, fontWeight: FontWeight.bold, color: Colors.white))),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 40),
+              child: FloatingActionButton.extended(
+                backgroundColor: procesando ? Colors.grey : Colors.red,
+                onPressed: procesando ? null : ejecutarCiclo,
+                label: Text(procesando ? "GRABANDO..." : "INICIAR 360"),
+                icon: const Icon(Icons.videocam),
+              ),
+            ),
+          )
+        ],
       ),
     );
   }
