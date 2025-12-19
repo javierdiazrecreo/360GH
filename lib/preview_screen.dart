@@ -12,78 +12,65 @@ class PreviewScreen extends StatefulWidget {
 }
 
 class _PreviewScreenState extends State<PreviewScreen> {
-  late VideoPlayerController _videoController;
+  late VideoPlayerController _controller;
+  bool _mostrarBotonPlay = true;
 
   @override
   void initState() {
     super.initState();
-    // Cargamos el video recién grabado desde el archivo temporal
-    _videoController = VideoPlayerController.file(File(widget.filePath))
-      ..initialize().then((_) {
-        setState(() {});
-        _videoController.setLooping(true);
-        _videoController.play();
-      });
+    _controller = VideoPlayerController.file(File(widget.filePath))
+      ..initialize().then((_) => setState(() {}));
   }
 
   @override
   void dispose() {
-    _videoController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("Revisar Captura 360", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      appBar: AppBar(title: const Text("Resultado")),
       body: Column(
         children: [
           Expanded(
-            child: _videoController.value.isInitialized
-                ? Center(
-                    child: AspectRatio(
-                      aspectRatio: _videoController.value.aspectRatio,
-                      child: VideoPlayer(_videoController),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (_controller.value.isInitialized) AspectRatio(aspectRatio: _controller.value.aspectRatio, child: VideoPlayer(_controller)),
+                if (_mostrarBotonPlay)
+                  Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20)),
+                        onPressed: () {
+                          setState(() => _mostrarBotonPlay = false);
+                          _controller.play();
+                        },
+                        icon: const Icon(Icons.play_circle_fill, size: 40),
+                        label: const Text("MOSTRAR VIDEO", style: TextStyle(fontSize: 20)),
+                      ),
                     ),
-                  )
-                : const Center(child: CircularProgressIndicator(color: Colors.red)),
+                  ),
+              ],
+            ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-            color: Colors.black,
+          Padding(
+            padding: const EdgeInsets.all(20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // BOTÓN DESCARTAR (Vuelve atrás para repetir)
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.delete_outline, color: Colors.white),
-                  label: const Text("DESCARTAR", style: TextStyle(color: Colors.white)),
-                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
-                ),
-                // BOTÓN GUARDAR (Lo manda a la Galería de fotos)
+                ElevatedButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.replay), label: const Text("REPETIR")),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    try {
-                      await Gal.putVideo(widget.filePath);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("✅ ¡Video guardado en Galería!")),
-                        );
-                        Navigator.pop(context);
-                      }
-                    } catch (e) {
-                      debugPrint("Error al guardar: $e");
-                    }
-                  },
-                  icon: const Icon(Icons.save_alt, color: Colors.white),
-                  label: const Text("GUARDAR", style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    await Gal.putVideo(widget.filePath);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Video guardado en la galería!")));
+                  }, 
+                  icon: const Icon(Icons.save), 
+                  label: const Text("GUARDAR"),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                 ),
               ],
             ),

@@ -8,16 +8,11 @@ void main() async {
   final cameras = await availableCameras();
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: Colors.redAccent,
-      brightness: Brightness.dark,
-    ),
+    theme: ThemeData(brightness: Brightness.dark, colorSchemeSeed: Colors.redAccent),
     home: ConfigScreen(cameras: cameras),
   ));
 }
 
-// --- PANTALLA INICIAL DE CONFIGURACIÓN ---
 class ConfigScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
   const ConfigScreen({super.key, required this.cameras});
@@ -27,59 +22,63 @@ class ConfigScreen extends StatefulWidget {
 }
 
 class _ConfigScreenState extends State<ConfigScreen> {
-  final TextEditingController _timerController = TextEditingController(text: "10");
-  final TextEditingController _ipController = TextEditingController(text: "192.168.1.100");
+  final _timerController = TextEditingController(text: "10");
+  final _ipController = TextEditingController(text: "192.168.1.100");
+  final _delayController = TextEditingController(text: "3");
+  
+  bool _usarFlash = false;
+  bool _usarGranAngular = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Configuración 360E")),
-      body: Padding(
+      appBar: AppBar(title: const Text("Configuración 360 Pro")),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(25.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.settings_suggest, size: 80, color: Colors.redAccent),
+            TextField(controller: _ipController, decoration: const InputDecoration(labelText: "IP Shelly", prefixIcon: Icon(Icons.lan))),
+            const SizedBox(height: 15),
+            Row(children: [
+              Expanded(child: TextField(controller: _timerController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Giro (seg)", prefixIcon: Icon(Icons.timer)))),
+              const SizedBox(width: 15),
+              Expanded(child: TextField(controller: _delayController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Delay (seg)", prefixIcon: Icon(Icons.hourglass_top)))),
+            ]),
+            const SizedBox(height: 15),
+            SwitchListTile(
+              title: const Text("Usar Lente Gran Angular (0.5x)"),
+              subtitle: const Text("Ideal para videos 360"),
+              value: _usarGranAngular, 
+              onChanged: (val) => setState(() => _usarGranAngular = val),
+            ),
+            SwitchListTile(
+              title: const Text("Activar Flash"),
+              value: _usarFlash, 
+              onChanged: (val) => setState(() => _usarFlash = val),
+            ),
             const SizedBox(height: 30),
-            TextField(
-              controller: _ipController,
-              decoration: const InputDecoration(
-                labelText: "IP del Motor (Shelly)",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lan),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _timerController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Tiempo de giro (segundos)",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.timer),
-              ),
-            ),
-            const Spacer(),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(20),
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-              ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(60), backgroundColor: Colors.redAccent),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CameraScreen(
-                      cameras: widget.cameras,
-                      segundos: int.tryParse(_timerController.text) ?? 10,
-                      ipMotor: _ipController.text,
-                    ),
-                  ),
-                );
+                // Buscamos la cámara adecuada
+                CameraDescription selected = widget.cameras.first;
+                if (_usarGranAngular) {
+                  // Intentamos buscar una cámara que diga 'ultra wide' o simplemente la segunda trasera
+                  selected = widget.cameras.firstWhere(
+                    (c) => c.lensDirection == CameraLensDirection.back && c.name.toLowerCase().contains('ultra'),
+                    orElse: () => widget.cameras.length > 1 ? widget.cameras[1] : widget.cameras.first
+                  );
+                }
+
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CameraScreen(
+                  camera: selected,
+                  segundos: int.tryParse(_timerController.text) ?? 10,
+                  delay: int.tryParse(_delayController.text) ?? 3,
+                  ipMotor: _ipController.text,
+                  flash: _usarFlash,
+                )));
               },
-              icon: const Icon(Icons.camera_alt),
-              label: const Text("ABRIR CÁMARA", style: TextStyle(fontSize: 18)),
+              child: const Text("IR A CÁMARA", style: TextStyle(color: Colors.white, fontSize: 18)),
             ),
           ],
         ),
@@ -88,18 +87,14 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 }
 
-// --- PANTALLA DE CÁMARA Y GRABACIÓN ---
 class CameraScreen extends StatefulWidget {
-  final List<CameraDescription> cameras;
+  final CameraDescription camera;
   final int segundos;
+  final int delay;
   final String ipMotor;
+  final bool flash;
 
-  const CameraScreen({
-    super.key,
-    required this.cameras,
-    required this.segundos,
-    required this.ipMotor,
-  });
+  const CameraScreen({super.key, required this.camera, required this.segundos, required this.delay, required this.ipMotor, required this.flash});
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -108,64 +103,49 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   bool procesando = false;
-  int indiceLente = 0;
+  int countdown = 0;
 
   @override
   void initState() {
     super.initState();
-    _inicializarCamara(widget.cameras[indiceLente]);
-  }
-
-  Future<void> _inicializarCamara(CameraDescription cameraDescription) async {
-    _controller = CameraController(
-      cameraDescription,
-      ResolutionPreset.high,
-      enableAudio: true,
-    );
-    try {
-      await _controller.initialize();
+    _controller = CameraController(widget.camera, ResolutionPreset.high);
+    _controller.initialize().then((_) {
+      if (widget.flash) _controller.setFlashMode(FlashMode.torch);
       if (mounted) setState(() {});
-    } catch (e) {
-      debugPrint("Error cámara: $e");
-    }
+    });
   }
 
   Future<void> ejecutarCiclo() async {
+    setState(() => procesando = true);
+    
+    // 1. Cuenta atrás (Delay)
+    for (int i = widget.delay; i > 0; i--) {
+      setState(() => countdown = i);
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    setState(() => countdown = 0);
+
+    // 2. Iniciar Grabación y Motor
+    await _controller.startVideoRecording();
     try {
-      setState(() => procesando = true);
+      http.get(Uri.parse("http://${widget.ipMotor}/relay/0?turn=on")).timeout(const Duration(milliseconds: 500));
+    } catch (_) {}
 
-      // 1. Iniciar grabación
-      await _controller.startVideoRecording();
+    // 3. Tiempo de giro
+    await Future.delayed(Duration(seconds: widget.segundos));
 
-      // 2. Motor ON (Silencioso)
-      try {
-        final url = "http://${widget.ipMotor}/relay/0?turn=on";
-        http.get(Uri.parse(url)).timeout(const Duration(milliseconds: 500));
-      } catch (_) {}
+    // 4. Parar Motor y Grabación
+    try {
+      http.get(Uri.parse("http://${widget.ipMotor}/relay/0?turn=off")).timeout(const Duration(milliseconds: 500));
+    } catch (_) {}
+    
+    XFile video = await _controller.stopVideoRecording();
+    if (widget.flash) await _controller.setFlashMode(FlashMode.off);
 
-      // 3. Esperar tiempo definido
-      await Future.delayed(Duration(seconds: widget.segundos));
-
-      // 4. Motor OFF (Silencioso)
-      try {
-        final url = "http://${widget.ipMotor}/relay/0?turn=off";
-        http.get(Uri.parse(url)).timeout(const Duration(milliseconds: 500));
-      } catch (_) {}
-
-      // 5. Parar grabación e ir a Preview
-      XFile video = await _controller.stopVideoRecording();
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PreviewScreen(filePath: video.path),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint("Error en ciclo: $e");
-    } finally {
-      setState(() => procesando = false);
+    if (mounted) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (context) => PreviewScreen(filePath: video.path),
+      ));
     }
   }
 
@@ -177,52 +157,23 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
+    if (!_controller.value.isInitialized) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     return Scaffold(
       body: Stack(
         children: [
-          SizedBox.expand(child: CameraPreview(_controller)),
-          // Botón para volver a ajustes
-          Positioned(
-            top: 50,
-            left: 20,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          // Botón para cambiar lente
-          Positioned(
-            top: 50,
-            right: 20,
-            child: CircleAvatar(
-              backgroundColor: Colors.black45,
-              child: IconButton(
-                icon: const Icon(Icons.cached, color: Colors.white),
-                onPressed: () async {
-                  indiceLente = (indiceLente + 1) % widget.cameras.length;
-                  await _controller.dispose();
-                  _inicializarCamara(widget.cameras[indiceLente]);
-                },
-              ),
-            ),
-          ),
-          // Botón principal
+          CameraPreview(_controller),
+          if (countdown > 0) Center(child: Text("$countdown", style: const TextStyle(fontSize: 120, fontWeight: FontWeight.bold, color: Colors.white))),
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 50),
+              padding: const EdgeInsets.only(bottom: 40),
               child: FloatingActionButton.extended(
-                backgroundColor: procesando ? Colors.grey : Colors.red,
                 onPressed: procesando ? null : ejecutarCiclo,
-                label: Text(procesando ? "PROCESANDO..." : "GRABAR ${widget.segundos}s"),
-                icon: const Icon(Icons.videocam),
+                label: Text(procesando ? "GRABANDO..." : "EMPEZAR CICLO"),
+                icon: const Icon(Icons.play_arrow),
               ),
             ),
-          ),
+          )
         ],
       ),
     );
