@@ -1,29 +1,40 @@
 name: app360e
-description: "Control de motor y cámara 360"
+description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.0+1
+
+version: 1.0.0+12
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  http: ^1.1.0
-  camera: ^0.10.5+5
+  camera: ^0.10.6
+  http: ^0.13.5
   path_provider: ^2.1.1
   path: ^1.8.3
-  
-  # Librerías añadidas para las nuevas funciones:
-  video_player: ^2.8.1     # Necesario para reproducir el video en la PreviewScreen
-  gal: ^2.0.0              # La forma más moderna y simple de guardar en la galería de Android/iOS
+  video_player: ^2.8.1
+  gal: ^2.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  # Esta es la herramienta que genera los iconos
   flutter_launcher_icons: ^0.13.1
+
+# CONFIGURACIÓN DEL LOGO
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon/logo.png"
+  # Esto hace que el logo se vea bien en Samsung (Adaptive Icon)
+  adaptive_icon_background: "#ffffff" 
+  adaptive_icon_foreground: "assets/icon/logo.png"
 
 flutter:
   uses-material-design: true
+  # Debes declarar la carpeta de assets para que Flutter la vea
+  assets:
+    - assets/icon/
