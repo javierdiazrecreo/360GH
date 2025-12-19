@@ -27,7 +27,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _delayController = TextEditingController(text: "3");
   
   bool _usarFlash = false;
-  bool _usarGranAngular = false;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +36,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
         padding: const EdgeInsets.all(25.0),
         child: Column(
           children: [
+            const Icon(Icons.settings, size: 50, color: Colors.redAccent),
+            const SizedBox(height: 20),
             TextField(controller: _ipController, decoration: const InputDecoration(labelText: "IP Shelly", prefixIcon: Icon(Icons.lan))),
             const SizedBox(height: 15),
             Row(children: [
@@ -46,13 +47,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
             ]),
             const SizedBox(height: 15),
             SwitchListTile(
-              title: const Text("Usar Lente Gran Angular (0.5x)"),
-              subtitle: const Text("Ideal para videos 360"),
-              value: _usarGranAngular, 
-              onChanged: (val) => setState(() => _usarGranAngular = val),
-            ),
-            SwitchListTile(
               title: const Text("Activar Flash"),
+              secondary: const Icon(Icons.flash_on),
               value: _usarFlash, 
               onChanged: (val) => setState(() => _usarFlash = val),
             ),
@@ -60,18 +56,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(60), backgroundColor: Colors.redAccent),
               onPressed: () {
-                // Buscamos la cámara adecuada
-                CameraDescription selected = widget.cameras.first;
-                if (_usarGranAngular) {
-                  // Intentamos buscar una cámara que diga 'ultra wide' o simplemente la segunda trasera
-                  selected = widget.cameras.firstWhere(
-                    (c) => c.lensDirection == CameraLensDirection.back && c.name.toLowerCase().contains('ultra'),
-                    orElse: () => widget.cameras.length > 1 ? widget.cameras[1] : widget.cameras.first
-                  );
-                }
-
+                // Usamos siempre la cámara principal (índice 0)
                 Navigator.push(context, MaterialPageRoute(builder: (context) => CameraScreen(
-                  camera: selected,
+                  camera: widget.cameras.first,
                   segundos: int.tryParse(_timerController.text) ?? 10,
                   delay: int.tryParse(_delayController.text) ?? 3,
                   ipMotor: _ipController.text,
@@ -110,7 +97,6 @@ class _CameraScreenState extends State<CameraScreen> {
     super.initState();
     _controller = CameraController(widget.camera, ResolutionPreset.high);
     _controller.initialize().then((_) {
-      if (widget.flash) _controller.setFlashMode(FlashMode.torch);
       if (mounted) setState(() {});
     });
   }
@@ -118,23 +104,26 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> ejecutarCiclo() async {
     setState(() => procesando = true);
     
-    // 1. Cuenta atrás (Delay)
+    // 1. Cuenta atrás visual
     for (int i = widget.delay; i > 0; i--) {
       setState(() => countdown = i);
       await Future.delayed(const Duration(seconds: 1));
     }
     setState(() => countdown = 0);
 
-    // 2. Iniciar Grabación y Motor
+    // 2. Flash (Solo si se pidió)
+    if (widget.flash) await _controller.setFlashMode(FlashMode.torch);
+
+    // 3. Iniciar Grabación y Motor
     await _controller.startVideoRecording();
     try {
       http.get(Uri.parse("http://${widget.ipMotor}/relay/0?turn=on")).timeout(const Duration(milliseconds: 500));
     } catch (_) {}
 
-    // 3. Tiempo de giro
+    // 4. Tiempo de grabación
     await Future.delayed(Duration(seconds: widget.segundos));
 
-    // 4. Parar Motor y Grabación
+    // 5. Parar Motor y Grabación
     try {
       http.get(Uri.parse("http://${widget.ipMotor}/relay/0?turn=off")).timeout(const Duration(milliseconds: 500));
     } catch (_) {}
@@ -162,15 +151,17 @@ class _CameraScreenState extends State<CameraScreen> {
       body: Stack(
         children: [
           CameraPreview(_controller),
-          if (countdown > 0) Center(child: Text("$countdown", style: const TextStyle(fontSize: 120, fontWeight: FontWeight.bold, color: Colors.white))),
+          if (countdown > 0) 
+            Center(child: Text("$countdown", style: const TextStyle(fontSize: 150, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 10, color: Colors.black)]))),
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 40),
               child: FloatingActionButton.extended(
+                backgroundColor: procesando ? Colors.grey : Colors.redAccent,
                 onPressed: procesando ? null : ejecutarCiclo,
                 label: Text(procesando ? "GRABANDO..." : "EMPEZAR CICLO"),
-                icon: const Icon(Icons.play_arrow),
+                icon: const Icon(Icons.videocam),
               ),
             ),
           )

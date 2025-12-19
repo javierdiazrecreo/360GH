@@ -23,7 +23,7 @@ android {
         applicationId = "com.example.app360v12"
         minSdk = flutter.minSdkVersion
         targetSdk = 34
-        versionCode = 1
+        versionCode = 3
         versionName = "1.0"
         multiDexEnabled = true
     }
