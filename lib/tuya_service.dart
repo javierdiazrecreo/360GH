@@ -30,7 +30,7 @@ class TuyaService {
         hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
 
     final response = await http.get(
-      Uri.parse("https://openapi.tuyaus.com$path"),
+      Uri.parse("https://openapi.tuyacn.com$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
         "sign": sign,
@@ -84,7 +84,7 @@ class TuyaService {
     print("📦 BODY → $body");
 
     final response = await http.post(
-      Uri.parse("https://openapi.tuyaus.com$path"),
+      Uri.parse("https://openapi.tuyacn.com$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
         "access_token": token,
