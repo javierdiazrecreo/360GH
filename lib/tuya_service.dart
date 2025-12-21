@@ -7,6 +7,9 @@ class TuyaService {
   static String? _accessToken;
   static int _expireTime = 0;
 
+  /// =========================
+  /// OBTENER ACCESS TOKEN
+  /// =========================
   static Future<String> _getAccessToken() async {
     final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -38,19 +41,24 @@ class TuyaService {
 
     final data = jsonDecode(response.body);
 
+    print("🔑 TUYA TOKEN RESPONSE → ${response.body}");
+
     if (data["success"] != true) {
       throw Exception("Error token Tuya: ${response.body}");
     }
 
     _accessToken = data["result"]["access_token"];
 
-    // 🔥 FIX CRÍTICO: cast seguro num → int (necesario para release)
-    _expireTime = now +
-        ((data["result"]["expire_time"] as num).toInt() * 1000);
+    // FIX CRÍTICO: num → int (release-safe)
+    _expireTime =
+        now + ((data["result"]["expire_time"] as num).toInt() * 1000);
 
     return _accessToken!;
-    }
+  }
 
+  /// =========================
+  /// ENCENDER / APAGAR MOTOR
+  /// =========================
   static Future<void> setMotor(bool encender) async {
     final token = await _getAccessToken();
     final t = DateTime.now().millisecondsSinceEpoch.toString();
@@ -71,6 +79,10 @@ class TuyaService {
     final sign =
         hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
 
+    print("⚡ TUYA CMD → ${encender ? "ON" : "OFF"}");
+    print("📡 PATH → $path");
+    print("📦 BODY → $body");
+
     final response = await http.post(
       Uri.parse("https://openapi.tuyaus.com$path"),
       headers: {
@@ -84,6 +96,6 @@ class TuyaService {
       body: body,
     );
 
-    print("Tuya motor ${encender ? "ON" : "OFF"} → ${response.body}");
+    print("📥 TUYA RESPONSE → ${response.body}");
   }
 }
