@@ -1,16 +1,10 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:http/http.dart' as http;
-import 'package:crypto/crypto.dart'; // Necesitas agregar: flutter pub add crypto
-import 'preview_screen.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
-// --- CONFIGURACIÓN DE TUYA (PRO) ---
-const String TUYA_ACCESS_ID = "53sspeuskqxsxfcda4x8";
-// >>> COPIA TU CLIENT SECRET AQUÍ ABAJO <<<
-const String TUYA_ACCESS_SECRET = "b99e9c80b78045f5ab200a5d4114ac25"; 
-const String TUYA_DEVICE_ID = "eb6851ea60756b1e79clcs"; // Tu motor actual
-const String TUYA_BASE_URL = "https://openapi.tuyaus.com";
+import 'preview_screen.dart';
+import 'tuya_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +30,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/* =========================
+   CONFIGURACIÓN INICIAL
+========================= */
+
 class ConfigScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
   const ConfigScreen({super.key, required this.cameras});
@@ -45,26 +43,33 @@ class ConfigScreen extends StatefulWidget {
 }
 
 class _ConfigScreenState extends State<ConfigScreen> {
-  final _timerController = TextEditingController(text: "10");
-  final _delayController = TextEditingController(text: "3");
+  final _duracionCtrl = TextEditingController(text: "10");
+  final _delayCtrl = TextEditingController(text: "3");
 
   ResolutionPreset _resolucion = ResolutionPreset.high;
   int _cameraIndex = 0;
   bool _audio = true;
+  bool _usarSensor = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("360Party – Configuración Pro")),
+      appBar: AppBar(title: const Text("360Party – Configuración")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text("Motor Tuya vinculado: eb68...lcs", 
-                  style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+            Card(
+              color: Colors.black54,
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  "Motor Tuya vinculado ✔",
+                  style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -72,7 +77,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _timerController,
+                    controller: _duracionCtrl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: "Duración (seg)",
@@ -83,10 +88,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
-                    controller: _delayController,
+                    controller: _delayCtrl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: "Delay",
+                      labelText: "Delay (seg)",
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -99,6 +104,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
               value: _audio,
               onChanged: (v) => setState(() => _audio = v),
             ),
+            SwitchListTile(
+              title: const Text("Iniciar con movimiento"),
+              subtitle: const Text("Detección por acelerómetro"),
+              value: _usarSensor,
+              onChanged: (v) => setState(() => _usarSensor = v),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               value: _cameraIndex,
@@ -110,7 +121,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 final cam = widget.cameras[i];
                 return DropdownMenuItem(
                   value: i,
-                  child: Text(cam.lensDirection == CameraLensDirection.back ? "Trasera" : "Frontal"),
+                  child: Text(
+                    cam.lensDirection == CameraLensDirection.back
+                        ? "Trasera"
+                        : "Frontal",
+                  ),
                 );
               }),
               onChanged: (v) => setState(() => _cameraIndex = v!),
@@ -123,9 +138,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 border: OutlineInputBorder(),
               ),
               items: const [
-                DropdownMenuItem(value: ResolutionPreset.medium, child: Text("720p")),
-                DropdownMenuItem(value: ResolutionPreset.high, child: Text("1080p")),
-                DropdownMenuItem(value: ResolutionPreset.ultraHigh, child: Text("4K")),
+                DropdownMenuItem(
+                    value: ResolutionPreset.medium, child: Text("720p")),
+                DropdownMenuItem(
+                    value: ResolutionPreset.high, child: Text("1080p")),
+                DropdownMenuItem(
+                    value: ResolutionPreset.ultraHigh, child: Text("4K")),
               ],
               onChanged: (v) => setState(() => _resolucion = v!),
             ),
@@ -141,10 +159,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   MaterialPageRoute(
                     builder: (_) => CameraScreen(
                       camera: widget.cameras[_cameraIndex],
-                      segundos: int.parse(_timerController.text),
-                      delay: int.parse(_delayController.text),
+                      duracion: int.parse(_duracionCtrl.text),
+                      delay: int.parse(_delayCtrl.text),
                       resolucion: _resolucion,
                       audio: _audio,
+                      usarSensor: _usarSensor,
                     ),
                   ),
                 );
@@ -158,20 +177,26 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 }
 
+/* =========================
+   PANTALLA DE CÁMARA
+========================= */
+
 class CameraScreen extends StatefulWidget {
   final CameraDescription camera;
-  final int segundos;
+  final int duracion;
   final int delay;
   final ResolutionPreset resolucion;
   final bool audio;
+  final bool usarSensor;
 
   const CameraScreen({
     super.key,
     required this.camera,
-    required this.segundos,
+    required this.duracion,
     required this.delay,
     required this.resolucion,
     required this.audio,
+    required this.usarSensor,
   });
 
   @override
@@ -182,109 +207,128 @@ class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   bool grabando = false;
   int countdown = 0;
+  StreamSubscription? _sensorSub;
 
   @override
   void initState() {
     super.initState();
-    _controller = CameraController(widget.camera, widget.resolucion, enableAudio: widget.audio);
-    _controller.initialize().then((_) { if (mounted) setState(() {}); });
-  }
-
-  // --- LÓGICA DE CONTROL DE MOTOR TUYA ---
-Future<void> enviarComandoTuya(bool encender) async {
-  try {
-    final String t = DateTime.now().millisecondsSinceEpoch.toString();
-    const String method = "POST";
-    const String urlPath = "/v1.0/devices/$TUYA_DEVICE_ID/commands";
-    
-    // El cuerpo debe ser exacto
-    final body = jsonEncode({
-      "commands": [
-        {"code": "switch_1", "value": encender}
-      ]
-    });
-
-    // --- CÁLCULO DE FIRMA OFICIAL TUYA ---
-    final contentHash = sha256.convert(utf8.encode(body)).toString();
-    // Importante: El orden de los strings en el cálculo de la firma es vital
-    final stringToSign = "$method\n$contentHash\n\n$urlPath";
-    final signStr = TUYA_ACCESS_ID + t + stringToSign;
-    
-    final key = utf8.encode(TUYA_ACCESS_SECRET);
-    final hmac = Hmac(sha256, key);
-    final sign = hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
-
-    final response = await http.post(
-      Uri.parse(TUYA_BASE_URL + urlPath),
-      headers: {
-        'client_id': TUYA_ACCESS_ID,
-        'sign': sign,
-        't': t,
-        'sign_method': 'HMAC-SHA256',
-        'Content-Type': 'application/json',
-      },
-      body: body,
+    _controller = CameraController(
+      widget.camera,
+      widget.resolucion,
+      enableAudio: widget.audio,
     );
 
-    // ESTO ES CLAVE: Mira la consola de VS Code cuando presiones el botón
-    print("Respuesta de Tuya: ${response.body}");
-    
-  } catch (e) {
-    print("Error de conexión: $e");
+    _controller.initialize().then((_) {
+      if (mounted) setState(() {});
+    });
+
+    if (widget.usarSensor) {
+      _escucharSensor();
+    }
   }
-}
+
+  void _escucharSensor() {
+    _sensorSub = accelerometerEvents.listen((event) {
+      if (grabando) return;
+      final g = event.x.abs() + event.y.abs() + event.z.abs();
+      if (g > 12.8) {
+        _sensorSub?.cancel();
+        iniciarProceso();
+      }
+    });
+  }
 
   Future<void> iniciarProceso() async {
     if (grabando) return;
     setState(() => grabando = true);
 
-    for (int i = widget.delay; i > 0; i--) {
-      setState(() => countdown = i);
-      await Future.delayed(const Duration(seconds: 1));
+    if (!widget.usarSensor) {
+      for (int i = widget.delay; i > 0; i--) {
+        setState(() => countdown = i);
+        await Future.delayed(const Duration(seconds: 1));
+      }
     }
 
     setState(() => countdown = 0);
-    
-    // 1. Encender Motor vía Nube
-    await enviarComandoTuya(true);
+
+    // 🔥 MOTOR ON
+    await TuyaService.setMotor(true);
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // 2. Iniciar Grabación
     await _controller.startVideoRecording();
-    await Future.delayed(Duration(seconds: widget.segundos));
-    
-    // 3. Detener Grabación
+    await Future.delayed(Duration(seconds: widget.duracion));
     final video = await _controller.stopVideoRecording();
 
-    // 4. Apagar Motor vía Nube
-    await enviarComandoTuya(false);
+    // 🔥 MOTOR OFF
+    await TuyaService.setMotor(false);
 
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => PreviewScreen(videoPath: video.path)),
+      MaterialPageRoute(
+        builder: (_) => PreviewScreen(videoPath: video.path),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (!_controller.value.isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
           CameraPreview(_controller),
+          if (widget.usarSensor && !grabando)
+            const Center(
+              child: Card(
+                color: Colors.black54,
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    "ESPERANDO GIRO DEL MOTOR...",
+                    style: TextStyle(
+                      color: Colors.orangeAccent,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (countdown > 0)
-            Center(child: Text("$countdown", style: const TextStyle(fontSize: 160, color: Colors.white, fontWeight: FontWeight.bold))),
+            Center(
+              child: Text(
+                "$countdown",
+                style: const TextStyle(
+                  fontSize: 160,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           Positioned(
-            bottom: 40, left: 0, right: 0,
+            bottom: 40,
+            left: 0,
+            right: 0,
             child: Center(
               child: FloatingActionButton.extended(
                 backgroundColor: grabando ? Colors.grey : Colors.red,
-                onPressed: grabando ? null : iniciarProceso,
-                label: Text(grabando ? "GRABANDO..." : "INICIAR 360"),
+                onPressed:
+                    (grabando || widget.usarSensor) ? null : iniciarProceso,
                 icon: const Icon(Icons.videocam),
+                label: Text(
+                  grabando
+                      ? "GRABANDO..."
+                      : widget.usarSensor
+                          ? "MODO SENSOR"
+                          : "INICIAR 360",
+                ),
               ),
             ),
           ),
@@ -295,6 +339,7 @@ Future<void> enviarComandoTuya(bool encender) async {
 
   @override
   void dispose() {
+    _sensorSub?.cancel();
     _controller.dispose();
     super.dispose();
   }

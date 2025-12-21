@@ -19,6 +19,7 @@ dependencies:
   flutter_inappwebview: ^6.0.0 # Para abrir la ventana de login de Tuya
   http: ^1.1.0                # Para hablar con la nube de Tuya
   shared_preferences: ^2.2.0  # Para recordar el motor seleccionado
+  sensors_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
