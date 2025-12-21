@@ -9,6 +9,8 @@ class TuyaService {
 
   static Future<String> _getAccessToken() async {
     final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Token aún válido
     if (_accessToken != null && now < _expireTime) {
       return _accessToken!;
     }
@@ -21,7 +23,8 @@ class TuyaService {
     final signStr = TuyaSecrets.accessId + t + stringToSign;
 
     final hmac = Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
-    final sign = hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
+    final sign =
+        hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
 
     final response = await http.get(
       Uri.parse("https://openapi.tuyaus.com$path"),
@@ -34,15 +37,19 @@ class TuyaService {
     );
 
     final data = jsonDecode(response.body);
-    if (!data["success"]) {
+
+    if (data["success"] != true) {
       throw Exception("Error token Tuya: ${response.body}");
     }
 
     _accessToken = data["result"]["access_token"];
-    _expireTime = now + (data["result"]["expire_time"] * 1000);
+
+    // 🔥 FIX CRÍTICO: cast seguro num → int (necesario para release)
+    _expireTime = now +
+        ((data["result"]["expire_time"] as num).toInt() * 1000);
 
     return _accessToken!;
-  }
+    }
 
   static Future<void> setMotor(bool encender) async {
     final token = await _getAccessToken();
@@ -61,13 +68,14 @@ class TuyaService {
     final signStr = TuyaSecrets.accessId + t + stringToSign;
 
     final hmac = Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
-    final sign = hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
+    final sign =
+        hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
 
     final response = await http.post(
       Uri.parse("https://openapi.tuyaus.com$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
-        "access_token": token, // 🔥 ESTO FALTABA
+        "access_token": token,
         "sign": sign,
         "t": t,
         "sign_method": "HMAC-SHA256",
