@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
 }
 
 /* =========================
-   CONFIGURACIÓN INICIAL
+   CONFIGURACIÓN
 ========================= */
 
 class ConfigScreen extends StatefulWidget {
@@ -59,9 +59,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Card(
+            const Card(
               color: Colors.black54,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
                   "Motor Tuya vinculado ✔",
@@ -178,7 +178,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
 }
 
 /* =========================
-   PANTALLA DE CÁMARA
+   CÁMARA
 ========================= */
 
 class CameraScreen extends StatefulWidget {
@@ -223,19 +223,15 @@ class _CameraScreenState extends State<CameraScreen> {
     });
 
     if (widget.usarSensor) {
-      _escucharSensor();
+      _sensorSub = accelerometerEvents.listen((event) {
+        if (grabando) return;
+        final g = event.x.abs() + event.y.abs() + event.z.abs();
+        if (g > 12.8) {
+          _sensorSub?.cancel();
+          iniciarProceso();
+        }
+      });
     }
-  }
-
-  void _escucharSensor() {
-    _sensorSub = accelerometerEvents.listen((event) {
-      if (grabando) return;
-      final g = event.x.abs() + event.y.abs() + event.z.abs();
-      if (g > 12.8) {
-        _sensorSub?.cancel();
-        iniciarProceso();
-      }
-    });
   }
 
   Future<void> iniciarProceso() async {
@@ -251,16 +247,28 @@ class _CameraScreenState extends State<CameraScreen> {
 
     setState(() => countdown = 0);
 
-    // 🔥 MOTOR ON
-    await TuyaService.setMotor(true);
-    await Future.delayed(const Duration(milliseconds: 500));
+    _show("Encendiendo motor…");
+    try {
+      await TuyaService.setMotor(true);
+    } catch (_) {
+      _show("⚠️ Motor no respondió");
+    }
+
+    await Future.delayed(const Duration(milliseconds: 400));
 
     await _controller.startVideoRecording();
-    await Future.delayed(Duration(seconds: widget.duracion));
-    final video = await _controller.stopVideoRecording();
+    _show("🎥 Grabando…");
 
-    // 🔥 MOTOR OFF
-    await TuyaService.setMotor(false);
+    await Future.delayed(Duration(seconds: widget.duracion));
+
+    final video = await _controller.stopVideoRecording();
+    _show("⏹ Video finalizado");
+
+    try {
+      await TuyaService.setMotor(false);
+    } catch (_) {
+      _show("⚠️ No se pudo apagar motor");
+    }
 
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -268,6 +276,12 @@ class _CameraScreenState extends State<CameraScreen> {
       MaterialPageRoute(
         builder: (_) => PreviewScreen(videoPath: video.path),
       ),
+    );
+  }
+
+  void _show(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -284,23 +298,6 @@ class _CameraScreenState extends State<CameraScreen> {
       body: Stack(
         children: [
           CameraPreview(_controller),
-          if (widget.usarSensor && !grabando)
-            const Center(
-              child: Card(
-                color: Colors.black54,
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    "ESPERANDO GIRO DEL MOTOR...",
-                    style: TextStyle(
-                      color: Colors.orangeAccent,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           if (countdown > 0)
             Center(
               child: Text(
@@ -323,11 +320,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     (grabando || widget.usarSensor) ? null : iniciarProceso,
                 icon: const Icon(Icons.videocam),
                 label: Text(
-                  grabando
-                      ? "GRABANDO..."
-                      : widget.usarSensor
-                          ? "MODO SENSOR"
-                          : "INICIAR 360",
+                  grabando ? "GRABANDO..." : "INICIAR 360",
                 ),
               ),
             ),
