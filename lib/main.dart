@@ -191,40 +191,48 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   // --- LÓGICA DE CONTROL DE MOTOR TUYA ---
-  Future<void> enviarComandoTuya(bool encender) async {
-    try {
-      final String t = DateTime.now().millisecondsSinceEpoch.toString();
-      final String method = "POST";
-      final String urlPath = "/v1.0/devices/$TUYA_DEVICE_ID/commands";
-      
-      final body = jsonEncode({
-        "commands": [{"code": "switch_1", "value": encender}]
-      });
+Future<void> enviarComandoTuya(bool encender) async {
+  try {
+    final String t = DateTime.now().millisecondsSinceEpoch.toString();
+    const String method = "POST";
+    const String urlPath = "/v1.0/devices/$TUYA_DEVICE_ID/commands";
+    
+    // El cuerpo debe ser exacto
+    final body = jsonEncode({
+      "commands": [
+        {"code": "switch_1", "value": encender}
+      ]
+    });
 
-      // Cálculo de firma según estándar Tuya
-      final contentHash = sha256.convert(utf8.encode(body)).toString();
-      final stringToSign = "$method\n$contentHash\n\n$urlPath";
-      final signStr = TUYA_ACCESS_ID + t + stringToSign;
-      
-      final key = utf8.encode(TUYA_ACCESS_SECRET);
-      final hmac = Hmac(sha256, key);
-      final sign = hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
+    // --- CÁLCULO DE FIRMA OFICIAL TUYA ---
+    final contentHash = sha256.convert(utf8.encode(body)).toString();
+    // Importante: El orden de los strings en el cálculo de la firma es vital
+    final stringToSign = "$method\n$contentHash\n\n$urlPath";
+    final signStr = TUYA_ACCESS_ID + t + stringToSign;
+    
+    final key = utf8.encode(TUYA_ACCESS_SECRET);
+    final hmac = Hmac(sha256, key);
+    final sign = hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
 
-      await http.post(
-        Uri.parse(TUYA_BASE_URL + urlPath),
-        headers: {
-          'client_id': TUYA_ACCESS_ID,
-          'sign': sign,
-          't': t,
-          'sign_method': 'HMAC-SHA256',
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      );
-    } catch (e) {
-      print("Error Tuya: $e");
-    }
+    final response = await http.post(
+      Uri.parse(TUYA_BASE_URL + urlPath),
+      headers: {
+        'client_id': TUYA_ACCESS_ID,
+        'sign': sign,
+        't': t,
+        'sign_method': 'HMAC-SHA256',
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
+
+    // ESTO ES CLAVE: Mira la consola de VS Code cuando presiones el botón
+    print("Respuesta de Tuya: ${response.body}");
+    
+  } catch (e) {
+    print("Error de conexión: $e");
   }
+}
 
   Future<void> iniciarProceso() async {
     if (grabando) return;
