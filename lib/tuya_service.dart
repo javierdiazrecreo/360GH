@@ -7,13 +7,40 @@ class TuyaService {
   static String? _accessToken;
   static int _expireTime = 0;
 
-  /// =========================
-  /// CONFIG REGIÓN (CRÍTICO)
-  /// =========================
-  static const String _baseUrl = "https://openapi.tuyaus.com";
+  static const String _endpoint = "https://openapi.tuyaeu.com";
 
   /// =========================
-  /// OBTENER ACCESS TOKEN
+  /// SIGN GENERATOR (OFICIAL)
+  /// =========================
+  static String _sign({
+    required String method,
+    required String path,
+    required String t,
+    String body = "",
+    String accessToken = "",
+  }) {
+    final bodyHash = sha256.convert(utf8.encode(body)).toString();
+
+    final stringToSign = [
+      method,
+      bodyHash,
+      "",
+      path,
+    ].join("\n");
+
+    final signStr =
+        TuyaSecrets.accessId + accessToken + t + stringToSign;
+
+    final hmac =
+        Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
+    return hmac
+        .convert(utf8.encode(signStr))
+        .toString()
+        .toUpperCase();
+  }
+
+  /// =========================
+  /// ACCESS TOKEN
   /// =========================
   static Future<String> _getAccessToken() async {
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -26,17 +53,14 @@ class TuyaService {
     const method = "GET";
     const path = "/v1.0/token?grant_type=1";
 
-    final stringToSign = "$method\n\n\n$path";
-    final signStr = TuyaSecrets.accessId + t + stringToSign;
-
-    final hmac = Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
-    final sign = hmac
-        .convert(utf8.encode(signStr))
-        .toString()
-        .toUpperCase();
+    final sign = _sign(
+      method: method,
+      path: path,
+      t: t,
+    );
 
     final response = await http.get(
-      Uri.parse("$_baseUrl$path"),
+      Uri.parse("$_endpoint$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
         "sign": sign,
@@ -45,12 +69,12 @@ class TuyaService {
       },
     );
 
+    print("🔑 TUYA TOKEN RESPONSE → ${response.body}");
+
     final data = jsonDecode(response.body);
 
-    print("🔑 TUYA TOKEN → ${response.body}");
-
-    if (response.statusCode != 200 || data["success"] != true) {
-      throw Exception("❌ ERROR TOKEN TUYA → ${response.body}");
+    if (data["success"] != true) {
+      throw Exception("TUYA TOKEN ERROR: ${response.body}");
     }
 
     _accessToken = data["result"]["access_token"];
@@ -61,7 +85,7 @@ class TuyaService {
   }
 
   /// =========================
-  /// ENCENDER / APAGAR MOTOR
+  /// MOTOR ON / OFF
   /// =========================
   static Future<void> setMotor(bool encender) async {
     final token = await _getAccessToken();
@@ -75,23 +99,19 @@ class TuyaService {
       ]
     });
 
-    final bodyHash = sha256.convert(utf8.encode(body)).toString();
-    final stringToSign = "$method\n$bodyHash\n\n$path";
-    final signStr = TuyaSecrets.accessId + t + stringToSign;
-
-    final hmac = Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
-    final sign = hmac
-        .convert(utf8.encode(signStr))
-        .toString()
-        .toUpperCase();
+    final sign = _sign(
+      method: method,
+      path: path,
+      t: t,
+      body: body,
+      accessToken: token,
+    );
 
     print("⚡ TUYA CMD → ${encender ? "ON" : "OFF"}");
-    print("🌎 REGION → $_baseUrl");
-    print("📡 PATH → $path");
     print("📦 BODY → $body");
 
     final response = await http.post(
-      Uri.parse("$_baseUrl$path"),
+      Uri.parse("$_endpoint$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
         "access_token": token,
@@ -99,20 +119,10 @@ class TuyaService {
         "t": t,
         "sign_method": "HMAC-SHA256",
         "Content-Type": "application/json",
-        "mode": "cors", // 🔥 NECESARIO EN MUCHOS DEVICES
       },
       body: body,
     );
 
-    print("📥 TUYA STATUS → ${response.statusCode}");
     print("📥 TUYA RESPONSE → ${response.body}");
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode != 200 || data["success"] != true) {
-      print("❌ TUYA NO EJECUTÓ EL COMANDO");
-    } else {
-      print("✅ TUYA COMANDO EJECUTADO");
-    }
   }
 }
