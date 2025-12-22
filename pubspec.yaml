@@ -16,7 +16,7 @@ dependencies:
   video_player: ^2.8.1
   gal: ^2.2.0
   intl: ^0.18.1
-  flutter_inappwebview: ^6.0.0 # Para abrir la ventana de login de Tuya
+  flutter_inappwebview: ^6.1.5 # Para abrir la ventana de login de Tuya
   http: ^1.1.0                # Para hablar con la nube de Tuya
   shared_preferences: ^2.2.0  # Para recordar el motor seleccionado
   sensors_plus: ^7.0.0

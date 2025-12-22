@@ -30,6 +30,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <intent-filter android:label="tuya_auth">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.javierdiazrecreo.app360" />
+            </intent-filter>
+
         </activity>
         
         <meta-data
@@ -43,4 +51,4 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
-</manifest>
+</manifest>s
