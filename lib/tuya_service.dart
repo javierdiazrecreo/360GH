@@ -8,12 +8,16 @@ class TuyaService {
   static int _expireTime = 0;
 
   /// =========================
+  /// CONFIG REGIÓN (CRÍTICO)
+  /// =========================
+  static const String _baseUrl = "https://openapi.tuyaus.com";
+
+  /// =========================
   /// OBTENER ACCESS TOKEN
   /// =========================
   static Future<String> _getAccessToken() async {
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    // Token aún válido
     if (_accessToken != null && now < _expireTime) {
       return _accessToken!;
     }
@@ -26,11 +30,13 @@ class TuyaService {
     final signStr = TuyaSecrets.accessId + t + stringToSign;
 
     final hmac = Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
-    final sign =
-        hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
+    final sign = hmac
+        .convert(utf8.encode(signStr))
+        .toString()
+        .toUpperCase();
 
     final response = await http.get(
-      Uri.parse("https://openapi.tuyaeu.com$path"),
+      Uri.parse("$_baseUrl$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
         "sign": sign,
@@ -41,15 +47,13 @@ class TuyaService {
 
     final data = jsonDecode(response.body);
 
-    print("🔑 TUYA TOKEN RESPONSE → ${response.body}");
+    print("🔑 TUYA TOKEN → ${response.body}");
 
-    if (data["success"] != true) {
-      throw Exception("Error token Tuya: ${response.body}");
+    if (response.statusCode != 200 || data["success"] != true) {
+      throw Exception("❌ ERROR TOKEN TUYA → ${response.body}");
     }
 
     _accessToken = data["result"]["access_token"];
-
-    // FIX CRÍTICO: num → int (release-safe)
     _expireTime =
         now + ((data["result"]["expire_time"] as num).toInt() * 1000);
 
@@ -76,15 +80,18 @@ class TuyaService {
     final signStr = TuyaSecrets.accessId + t + stringToSign;
 
     final hmac = Hmac(sha256, utf8.encode(TuyaSecrets.accessSecret));
-    final sign =
-        hmac.convert(utf8.encode(signStr)).toString().toUpperCase();
+    final sign = hmac
+        .convert(utf8.encode(signStr))
+        .toString()
+        .toUpperCase();
 
     print("⚡ TUYA CMD → ${encender ? "ON" : "OFF"}");
+    print("🌎 REGION → $_baseUrl");
     print("📡 PATH → $path");
     print("📦 BODY → $body");
 
     final response = await http.post(
-      Uri.parse("https://openapi.tuyaeu.com$path"),
+      Uri.parse("$_baseUrl$path"),
       headers: {
         "client_id": TuyaSecrets.accessId,
         "access_token": token,
@@ -92,10 +99,20 @@ class TuyaService {
         "t": t,
         "sign_method": "HMAC-SHA256",
         "Content-Type": "application/json",
+        "mode": "cors", // 🔥 NECESARIO EN MUCHOS DEVICES
       },
       body: body,
     );
 
+    print("📥 TUYA STATUS → ${response.statusCode}");
     print("📥 TUYA RESPONSE → ${response.body}");
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode != 200 || data["success"] != true) {
+      print("❌ TUYA NO EJECUTÓ EL COMANDO");
+    } else {
+      print("✅ TUYA COMANDO EJECUTADO");
+    }
   }
 }
