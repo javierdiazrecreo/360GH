@@ -11,8 +11,8 @@ class LoginTuyaScreen extends StatefulWidget {
 
 class _LoginTuyaScreenState extends State<LoginTuyaScreen> {
   // Esta es la URL oficial de Tuya para autorizar apps de terceros
-  final String authUrl = 
-    "https://api.tuya.com/v1.0/gateway/oauth2/auth?client_id=${TuyaSecrets.appKey}&response_type=code&redirect_uri=com.javierdiazrecreo.app360://auth&scope=ay,0";
+  final String authUrl =  
+  "https://auth-us.tuya.com/v2.0/gateway/oauth2/auth?client_id=${TuyaSecrets.appKey}&response_type=code&redirect_uri=com.javierdiazrecreo.app360://auth&scope=ay,0";
 
   @override
   Widget build(BuildContext context) {
