@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Versión de Gradle compatible con SDK 36 y Java 17
+        // Versión compatible con Java 17 y Android 15
         classpath("com.android.tools.build:gradle:8.2.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10")
     }
@@ -14,14 +14,14 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorio oficial de Tuya / Smart Life
+        // Repositorios oficiales de Tuya (incluimos todos para asegurar)
         maven { url = uri("https://maven-other.tuya.com/repository/liuyun-temp/") }
-        // Repositorio adicional por si faltan dependencias de soporte
+        maven { url = uri("https://maven-other.tuya.com/repository/liuyun-static/") }
         maven { url = uri("https://developer.huawei.com/repo/") }
+        maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
     }
 }
 
-// Configuración de directorios de construcción para Flutter
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
