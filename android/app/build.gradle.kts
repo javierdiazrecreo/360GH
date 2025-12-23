@@ -44,7 +44,7 @@ flutter {
 
 dependencies {
     // SDK de Tuya / Smart Life
-    implementation("com.tuya.smart:tuyasmart:6.11.0")
+    implementation("com.tuya.smart:tuyasmart:5.1.0")
     
     // Soporte para Kotlin y Multidex
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
