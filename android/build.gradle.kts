@@ -14,6 +14,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // REPOSITORIO DE TUYA AÑADIDO AQUÍ
+        maven { url = uri("https://maven-other.tuya.com/repository/liuyun-temp/") }
     }
 }
 

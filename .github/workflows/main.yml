@@ -15,18 +15,24 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle' # Esto acelera las compilaciones
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
       - name: Build APK
         run: |
-          # Esto busca donde está el pubspec.yaml y entra ahí
+          # Entramos a la carpeta del proyecto
           cd $(find . -name pubspec.yaml -exec dirname {} \;)
+          
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons
+          
+          # IMPORTANTE: Forzamos a Gradle a usar menos memoria para evitar que el runner mate el proceso
+          # También quitamos el --debug para que use la firma release (aunque sea la de defecto de GH)
+          flutter build apk --release --no-tree-shake-icons --dart-define=GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
