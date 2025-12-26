@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'models/recording_config.dart';
+import 'preview_screen.dart';
 
 class CameraScreen extends StatefulWidget {
-  final RecordingConfig config;
+  final CameraDescription camera;
+  final ResolutionPreset resolution;
+  final int duration;
+  final int delay;
 
-  const CameraScreen({super.key, required this.config});
+  const CameraScreen({
+    super.key,
+    required this.camera,
+    required this.resolution,
+    required this.duration,
+    required this.delay,
+  });
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -14,51 +23,39 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   late Future<void> _initFuture;
-
-  bool _recording = false;
+  bool recording = false;
 
   @override
   void initState() {
     super.initState();
 
     _controller = CameraController(
-      widget.config.camera,
-      widget.config.resolution,
-      enableAudio: widget.config.audio,
+      widget.camera,
+      widget.resolution,
+      enableAudio: true,
     );
 
     _initFuture = _controller.initialize();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _startRecording() async {
-    if (_recording) return;
-
-    setState(() => _recording = true);
-
-    // Delay antes de grabar
-    if (widget.config.delaySeconds > 0) {
-      await Future.delayed(
-        Duration(seconds: widget.config.delaySeconds),
-      );
-    }
+  Future<void> startRecording() async {
+    await Future.delayed(Duration(seconds: widget.delay));
 
     await _controller.startVideoRecording();
+    setState(() => recording = true);
 
-    await Future.delayed(
-      Duration(seconds: widget.config.durationSeconds),
-    );
+    await Future.delayed(Duration(seconds: widget.duration));
 
-    final video = await _controller.stopVideoRecording();
+    final file = await _controller.stopVideoRecording();
 
     if (!mounted) return;
 
-    Navigator.pop(context, video.path);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PreviewScreen(videoPath: file.path),
+      ),
+    );
   }
 
   @override
@@ -72,23 +69,18 @@ class _CameraScreenState extends State<CameraScreen> {
             return Stack(
               children: [
                 CameraPreview(_controller),
-
                 Positioned(
-                  bottom: 40,
+                  bottom: 30,
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: FloatingActionButton.extended(
-                      backgroundColor:
-                          _recording ? Colors.grey : Colors.red,
-                      onPressed: _recording ? null : _startRecording,
-                      icon: const Icon(Icons.videocam),
-                      label: Text(
-                        _recording ? "GRABANDO..." : "INICIAR 360",
-                      ),
+                    child: ElevatedButton(
+                      onPressed: recording ? null : startRecording,
+                      child: Text(
+                          recording ? "Grabando..." : "Iniciar video 360"),
                     ),
                   ),
-                ),
+                )
               ],
             );
           }
@@ -96,7 +88,7 @@ class _CameraScreenState extends State<CameraScreen> {
           if (snapshot.hasError) {
             return Center(
               child: Text(
-                "ERROR CÁMARA:\n${snapshot.error}",
+                "ERROR:\n${snapshot.error}",
                 style: const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
@@ -107,5 +99,11 @@ class _CameraScreenState extends State<CameraScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }

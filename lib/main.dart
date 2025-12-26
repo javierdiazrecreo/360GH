@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-
 import 'config_screen.dart';
+
+late List<CameraDescription> cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final cameras = await availableCameras();
-
-  runApp(MyApp(cameras: cameras));
+  cameras = await availableCameras();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final List<CameraDescription> cameras;
-
-  const MyApp({super.key, required this.cameras});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: '360Party',
       home: ConfigScreen(cameras: cameras),
     );
   }
