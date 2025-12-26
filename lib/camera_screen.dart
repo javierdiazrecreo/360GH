@@ -47,16 +47,14 @@ class _CameraScreenState extends State<CameraScreen> {
           if (snapshot.hasError) {
             return Center(
               child: Text(
-                "Error cámara:\n${snapshot.error}",
+                "ERROR CÁMARA:\n${snapshot.error}",
                 style: const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
             );
           }
 
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );
