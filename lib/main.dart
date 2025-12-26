@@ -1,47 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'camera_screen.dart';
-
-late List<CameraDescription> cameras;
+import 'config_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  cameras = await availableCameras();
-  runApp(const MyApp());
+  final cameras = await availableCameras();
+  runApp(MyApp(cameras: cameras));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final List<CameraDescription> cameras;
+  const MyApp({super.key, required this.cameras});
 
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: ElevatedButton(
-          child: const Text("ABRIR CÁMARA"),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CameraScreen(camera: cameras.first),
-              ),
-            );
-          },
-        ),
-      ),
+      home: ConfigScreen(cameras: cameras),
     );
   }
 }
