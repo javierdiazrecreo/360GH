@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:gal/gal.dart';
+
+import 'processing_screen.dart';
 
 class PreviewScreen extends StatefulWidget {
   final String videoPath;
@@ -24,15 +25,6 @@ class _PreviewScreenState extends State<PreviewScreen> {
       });
   }
 
-  Future<void> guardar() async {
-    await Gal.putVideo(widget.videoPath, album: "360Party");
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Video guardado en 360Party")),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,25 +41,19 @@ class _PreviewScreenState extends State<PreviewScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _controller.seekTo(Duration.zero);
-                    _controller.play();
-                  },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text("Ver Video"),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: guardar,
-                  icon: const Icon(Icons.save),
-                  label: const Text("Guardar en galería"),
-                ),
-              ],
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProcessingScreen(videoPath: widget.videoPath),
+                  ),
+                );
+              },
+              child: const Text("CONTINUAR"),
             ),
-          ),
+          )
         ],
       ),
     );

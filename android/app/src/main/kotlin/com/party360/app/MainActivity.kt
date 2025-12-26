@@ -8,7 +8,9 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // REEMPLAZA ESTO CON TU SECRET REAL DEL PANEL
-        TuyaHomeSdk.init(application, "crjtnxhcsjxwvpv5jhku", "TU_SECRET_AQUI")
+        // Inicializa el SDK con tus credenciales
+        // AppKey: crjtnxhcsjxwvpv5jhku
+        // Reemplaza "TU_APP_SECRET" por el valor de tu panel de Tuya
+        TuyaHomeSdk.init(application, "crjtnxhcsjxwvpv5jhku", "TU_APP_SECRET")
     }
 }

@@ -6,7 +6,6 @@ plugins {
 
 android {
     namespace = "com.party360.app"
-    // ACTUALIZADO A 36 PARA EVITAR ERRORES DE PLUGINS (Cámara, Video, etc)
     compileSdk = 36
 
     defaultConfig {
@@ -15,13 +14,11 @@ android {
         targetSdk = 36
         versionCode = 4
         versionName = "1.0"
-        
         multiDexEnabled = true 
     }
 
     buildTypes {
         release {
-            // Usamos la firma de debug para que GitHub compile sin pedir certificados
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
@@ -43,14 +40,12 @@ flutter {
 }
 
 dependencies {
-    // SDK de Tuya / Smart Life
-    implementation("com.tuya.smart:tuyasmart:5.1.0")
+    // CARGA DEL SDK LOCAL (VENDOR)
+    implementation(files("libs/tuyasmart-5.1.0.aar"))
     
-    // Soporte para Kotlin y Multidex
+    // Dependencias obligatorias para que el SDK local funcione
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
     implementation("androidx.multidex:multidex:2.0.1")
-    
-    // Librerías de red que el SDK de Tuya requiere obligatoriamente
     implementation("com.squareup.okhttp3:okhttp:3.14.9")
     implementation("com.squareup.okio:okio:1.17.5")
     implementation("com.alibaba:fastjson:1.1.67.android")

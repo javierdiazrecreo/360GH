@@ -4,7 +4,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Versión compatible con Java 17 y Android 15
         classpath("com.android.tools.build:gradle:8.2.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10")
     }
@@ -14,14 +13,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorios oficiales de Tuya (incluimos todos para asegurar)
-        maven { url = uri("https://maven-other.tuya.com/repository/liuyun-temp/") }
-        maven { url = uri("https://maven-other.tuya.com/repository/liuyun-static/") }
-        maven { url = uri("https://developer.huawei.com/repo/") }
-        maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
-        // Añadimos jcenter solo como respaldo para versiones 5.x
-        @Suppress("DEPRECATION")
-        jcenter()
     }
 }
 
