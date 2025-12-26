@@ -24,6 +24,7 @@ class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   late Future<void> _initFuture;
   bool recording = false;
+  int countdown = 0;
 
   @override
   void initState() {
@@ -39,10 +40,20 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> startRecording() async {
-    await Future.delayed(Duration(seconds: widget.delay));
+    if (recording) return;
+
+    // Delay con countdown visible
+    for (int i = widget.delay; i > 0; i--) {
+      setState(() => countdown = i);
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    setState(() {
+      countdown = 0;
+      recording = true;
+    });
 
     await _controller.startVideoRecording();
-    setState(() => recording = true);
 
     await Future.delayed(Duration(seconds: widget.duration));
 
@@ -53,7 +64,13 @@ class _CameraScreenState extends State<CameraScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => PreviewScreen(videoPath: file.path),
+        builder: (_) => PreviewScreen(
+          videoPath: file.path,
+          camera: widget.camera,
+          resolution: widget.resolution,
+          duration: widget.duration,
+          delay: widget.delay,
+        ),
       ),
     );
   }
@@ -69,6 +86,21 @@ class _CameraScreenState extends State<CameraScreen> {
             return Stack(
               children: [
                 CameraPreview(_controller),
+
+                // Countdown
+                if (countdown > 0)
+                  Center(
+                    child: Text(
+                      "$countdown",
+                      style: const TextStyle(
+                        fontSize: 120,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                // Botón
                 Positioned(
                   bottom: 30,
                   left: 0,
@@ -76,11 +108,21 @@ class _CameraScreenState extends State<CameraScreen> {
                   child: Center(
                     child: ElevatedButton(
                       onPressed: recording ? null : startRecording,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            recording ? Colors.grey : Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 14,
+                        ),
+                      ),
                       child: Text(
-                          recording ? "Grabando..." : "Iniciar video 360"),
+                        recording ? "Grabando..." : "Iniciar video 360",
+                        style: const TextStyle(fontSize: 16),
+                      ),
                     ),
                   ),
-                )
+                ),
               ],
             );
           }
@@ -88,7 +130,7 @@ class _CameraScreenState extends State<CameraScreen> {
           if (snapshot.hasError) {
             return Center(
               child: Text(
-                "ERROR:\n${snapshot.error}",
+                "ERROR CÁMARA:\n${snapshot.error}",
                 style: const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
