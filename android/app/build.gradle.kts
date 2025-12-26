@@ -10,15 +10,18 @@ android {
 
     defaultConfig {
         applicationId = "com.party360.app"
-        minSdk = 23 
+        minSdk = 23
         targetSdk = 36
         versionCode = 4
         versionName = "1.0"
-        multiDexEnabled = true 
+
+        // Flutter maneja multidex automáticamente si es necesario
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
+            // Usamos la firma debug por ahora (válido para GitHub Actions)
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
@@ -40,13 +43,6 @@ flutter {
 }
 
 dependencies {
-    // CARGA DEL SDK LOCAL (VENDOR)
-    implementation(files("libs/tuyasmart-5.1.0.aar"))
-    
-    // Dependencias obligatorias para que el SDK local funcione
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
-    implementation("androidx.multidex:multidex:2.0.1")
-    implementation("com.squareup.okhttp3:okhttp:3.14.9")
-    implementation("com.squareup.okio:okio:1.17.5")
-    implementation("com.alibaba:fastjson:1.1.67.android")
+    // ❌ NO agregar nada aquí manualmente
+    // Flutter, Firebase y plugins se inyectan automáticamente
 }
