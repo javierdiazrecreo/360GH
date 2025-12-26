@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:gal/gal.dart';
 
 class PreviewScreen extends StatefulWidget {
   final String videoPath;
@@ -20,22 +19,29 @@ class _PreviewScreenState extends State<PreviewScreen> {
     super.initState();
     _controller = VideoPlayerController.file(File(widget.videoPath))
       ..initialize().then((_) {
-        setState(() {
-          initialized = true;
-        });
+        setState(() => initialized = true);
       });
   }
 
-  Future<void> guardar() async {
-    await Gal.putVideo(widget.videoPath, album: "360Party");
-    if (!mounted) return;
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
+  void _verVideo() {
+    _controller.seekTo(Duration.zero);
+    _controller.play();
+  }
+
+  void _guardar() {
+    // Placeholder – acá irá el upload a Firebase Storage
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Video guardado en 360Party")),
+      const SnackBar(content: Text("Guardar: próximamente (upload cloud)")),
     );
   }
 
-  void descartar() {
+  void _descartar() {
     Navigator.pop(context);
   }
 
@@ -53,37 +59,24 @@ class _PreviewScreenState extends State<PreviewScreen> {
                   )
                 : const Center(child: CircularProgressIndicator()),
           ),
-
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // ▶️ VER VIDEO
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _controller.seekTo(Duration.zero);
-                    _controller.play();
-                  },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text("Ver video"),
+                ElevatedButton(
+                  onPressed: _descartar,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                  child: const Text("Descartar"),
                 ),
-
-                const SizedBox(height: 12),
-
-                // 💾 GUARDAR
-                ElevatedButton.icon(
-                  onPressed: guardar,
-                  icon: const Icon(Icons.save),
-                  label: const Text("Guardar"),
+                ElevatedButton(
+                  onPressed: _verVideo,
+                  child: const Text("Ver video"),
                 ),
-
-                const SizedBox(height: 12),
-
-                // ❌ DESCARTAR
-                OutlinedButton.icon(
-                  onPressed: descartar,
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text("Descartar"),
+                ElevatedButton(
+                  onPressed: _guardar,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text("Guardar"),
                 ),
               ],
             ),
@@ -91,11 +84,5 @@ class _PreviewScreenState extends State<PreviewScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 }
