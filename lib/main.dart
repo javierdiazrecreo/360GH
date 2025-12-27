@@ -7,10 +7,7 @@ late List<CameraDescription> cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔥 ESTE ES EL PASO CLAVE
   await Firebase.initializeApp();
-
   cameras = await availableCameras();
   runApp(const MyApp());
 }

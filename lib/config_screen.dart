@@ -12,9 +12,9 @@ class ConfigScreen extends StatefulWidget {
 
 class _ConfigScreenState extends State<ConfigScreen> {
   late List<CameraDescription> usableCameras;
-  late CameraDescription selectedCamera;
+  int selectedCameraIndex = 0;
 
-  ResolutionPreset resolution = ResolutionPreset.high; // 1080p por defecto
+  ResolutionPreset resolution = ResolutionPreset.high;
   int duration = 10;
   int delay = 3;
 
@@ -22,33 +22,21 @@ class _ConfigScreenState extends State<ConfigScreen> {
   void initState() {
     super.initState();
 
-    // Solo frontal y trasera
     usableCameras = widget.cameras
         .where((c) =>
             c.lensDirection == CameraLensDirection.back ||
             c.lensDirection == CameraLensDirection.front)
         .toList();
 
-    selectedCamera = usableCameras.first;
+    if (usableCameras.isEmpty) {
+      usableCameras = widget.cameras;
+    }
   }
 
   String cameraLabel(CameraDescription cam) {
     return cam.lensDirection == CameraLensDirection.back
         ? "Trasera"
         : "Frontal";
-  }
-
-  String resolutionLabel(ResolutionPreset r) {
-    switch (r) {
-      case ResolutionPreset.medium:
-        return "720p";
-      case ResolutionPreset.high:
-        return "1080p";
-      case ResolutionPreset.veryHigh:
-        return "4K";
-      default:
-        return "1080p";
-    }
   }
 
   @override
@@ -60,15 +48,20 @@ class _ConfigScreenState extends State<ConfigScreen> {
         child: Column(
           children: [
             // ===== CÁMARA =====
-            DropdownButtonFormField<CameraDescription>(
-              value: selectedCamera,
-              items: usableCameras.map((cam) {
-                return DropdownMenuItem(
-                  value: cam,
-                  child: Text(cameraLabel(cam)),
-                );
-              }).toList(),
-              onChanged: (cam) => setState(() => selectedCamera = cam!),
+            DropdownButtonFormField<int>(
+              value: selectedCameraIndex,
+              items: List.generate(
+                usableCameras.length,
+                (index) => DropdownMenuItem(
+                  value: index,
+                  child: Text(cameraLabel(usableCameras[index])),
+                ),
+              ),
+              onChanged: (index) {
+                if (index != null) {
+                  setState(() => selectedCameraIndex = index);
+                }
+              },
               decoration: const InputDecoration(labelText: "Cámara"),
             ),
 
@@ -91,7 +84,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   child: Text("4K"),
                 ),
               ],
-              onChanged: (r) => setState(() => resolution = r!),
+              onChanged: (r) {
+                if (r != null) {
+                  setState(() => resolution = r);
+                }
+              },
               decoration: const InputDecoration(labelText: "Resolución"),
             ),
 
@@ -99,7 +96,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
             // ===== DURACIÓN =====
             TextFormField(
-              initialValue: "10",
+              initialValue: duration.toString(),
               keyboardType: TextInputType.number,
               decoration:
                   const InputDecoration(labelText: "Duración (segundos)"),
@@ -113,7 +110,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
             // ===== DELAY =====
             TextFormField(
-              initialValue: "3",
+              initialValue: delay.toString(),
               keyboardType: TextInputType.number,
               decoration:
                   const InputDecoration(labelText: "Delay (segundos)"),
@@ -135,7 +132,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => CameraScreen(
-                      camera: selectedCamera,
+                      camera: usableCameras[selectedCameraIndex],
                       resolution: resolution,
                       duration: duration,
                       delay: delay,
