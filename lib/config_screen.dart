@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'camera_screen.dart';
+import 'package:camera/camera.dart';
 
 class ConfigScreen extends StatefulWidget {
   const ConfigScreen({super.key});
@@ -8,16 +10,35 @@ class ConfigScreen extends StatefulWidget {
 }
 
 class _ConfigScreenState extends State<ConfigScreen> {
-  final TextEditingController durationController =
-      TextEditingController(text: '6');
-  final TextEditingController delayController =
-      TextEditingController(text: '3');
+  int delaySeconds = 3;
+  int videoSeconds = 6;
+  ResolutionPreset resolution = ResolutionPreset.high;
 
-  @override
-  void dispose() {
-    durationController.dispose();
-    delayController.dispose();
-    super.dispose();
+  Future<void> _startCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        throw Exception('No cameras found');
+      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CameraScreen(
+            camera: cameras.first,
+            resolution: resolution,
+            duration: videoSeconds,
+            delay: delaySeconds,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error cámara: $e')),
+      );
+    }
   }
 
   @override
@@ -30,32 +51,62 @@ class _ConfigScreenState extends State<ConfigScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-              controller: durationController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Duración del video (segundos)',
-                border: OutlineInputBorder(),
-              ),
+            const Text('Delay (segundos)'),
+            Slider(
+              min: 0,
+              max: 10,
+              divisions: 10,
+              value: delaySeconds.toDouble(),
+              label: delaySeconds.toString(),
+              onChanged: (v) => setState(() => delaySeconds = v.toInt()),
             ),
+
             const SizedBox(height: 16),
-            TextFormField(
-              controller: delayController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Delay antes de grabar (segundos)',
-                border: OutlineInputBorder(),
-              ),
+
+            const Text('Duración del video (segundos)'),
+            Slider(
+              min: 3,
+              max: 15,
+              divisions: 12,
+              value: videoSeconds.toDouble(),
+              label: videoSeconds.toString(),
+              onChanged: (v) => setState(() => videoSeconds = v.toInt()),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context, {
-                  'duration': int.tryParse(durationController.text) ?? 6,
-                  'delay': int.tryParse(delayController.text) ?? 3,
-                });
+
+            const SizedBox(height: 16),
+
+            const Text('Resolución'),
+            DropdownButton<ResolutionPreset>(
+              value: resolution,
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(
+                  value: ResolutionPreset.low,
+                  child: Text('Baja'),
+                ),
+                DropdownMenuItem(
+                  value: ResolutionPreset.medium,
+                  child: Text('Media'),
+                ),
+                DropdownMenuItem(
+                  value: ResolutionPreset.high,
+                  child: Text('Alta'),
+                ),
+                DropdownMenuItem(
+                  value: ResolutionPreset.veryHigh,
+                  child: Text('Muy alta'),
+                ),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => resolution = v);
               },
-              child: const Text('Guardar configuración'),
+            ),
+
+            const SizedBox(height: 32),
+
+            ElevatedButton(
+              onPressed: _startCamera,
+              child: const Text('Guardar y continuar'),
             ),
           ],
         ),
