@@ -23,9 +23,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
     super.initState();
 
     usableCameras = widget.cameras
-        .where((c) =>
-            c.lensDirection == CameraLensDirection.back ||
-            c.lensDirection == CameraLensDirection.front)
+        .where(
+          (c) =>
+              c.lensDirection == CameraLensDirection.back ||
+              c.lensDirection == CameraLensDirection.front,
+        )
         .toList();
 
     if (usableCameras.isEmpty) {
@@ -36,30 +38,28 @@ class _ConfigScreenState extends State<ConfigScreen> {
   String cameraLabel(CameraDescription cam) {
     switch (cam.lensDirection) {
       case CameraLensDirection.back:
-        return "Trasera";
+        return 'Trasera';
       case CameraLensDirection.front:
-        return "Frontal";
+        return 'Frontal';
       default:
-        return "Otra";
+        return 'Otra';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🔴 GUARDA CRÍTICA
     if (usableCameras.isEmpty) {
       return const Scaffold(
         body: Center(
-          child: Text(
-            "No se detectaron cámaras",
-            style: TextStyle(fontSize: 18),
-          ),
+          child: Text('No se detectaron cámaras'),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Configuración")),
+      appBar: AppBar(
+        title: const Text('Configuración'),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -67,9 +67,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
             // ===== CÁMARA =====
             DropdownButtonFormField<int>(
               value: selectedCameraIndex,
+              decoration: const InputDecoration(labelText: 'Cámara'),
               items: List.generate(
                 usableCameras.length,
-                (index) => DropdownMenuItem(
+                (index) => DropdownMenuItem<int>(
                   value: index,
                   child: Text(cameraLabel(usableCameras[index])),
                 ),
@@ -79,7 +80,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   setState(() => selectedCameraIndex = index);
                 }
               },
-              decoration: const InputDecoration(labelText: "Cámara"),
             ),
 
             const SizedBox(height: 16),
@@ -87,18 +87,19 @@ class _ConfigScreenState extends State<ConfigScreen> {
             // ===== RESOLUCIÓN =====
             DropdownButtonFormField<ResolutionPreset>(
               value: resolution,
+              decoration: const InputDecoration(labelText: 'Resolución'),
               items: const [
                 DropdownMenuItem(
                   value: ResolutionPreset.medium,
-                  child: Text("720p"),
+                  child: Text('720p'),
                 ),
                 DropdownMenuItem(
                   value: ResolutionPreset.high,
-                  child: Text("1080p"),
+                  child: Text('1080p'),
                 ),
                 DropdownMenuItem(
                   value: ResolutionPreset.veryHigh,
-                  child: Text("4K"),
+                  child: Text('4K'),
                 ),
               ],
               onChanged: (r) {
@@ -106,7 +107,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   setState(() => resolution = r);
                 }
               },
-              decoration: const InputDecoration(labelText: "Resolución"),
             ),
 
             const SizedBox(height: 16),
@@ -116,10 +116,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
               initialValue: duration.toString(),
               keyboardType: TextInputType.number,
               decoration:
-                  const InputDecoration(labelText: "Duración (segundos)"),
+                  const InputDecoration(labelText: 'Duración (segundos)'),
               onChanged: (v) {
                 final parsed = int.tryParse(v);
-                duration = parsed != null && parsed > 0 ? parsed : duration;
+                if (parsed != null && parsed > 0) {
+                  duration = parsed;
+                }
               },
             ),
 
@@ -129,32 +131,4 @@ class _ConfigScreenState extends State<ConfigScreen> {
             TextFormField(
               initialValue: delay.toString(),
               keyboardType: TextInputType.number,
-              decoration:
-                  const InputDecoration(labelText: "Delay (segundos)"),
-              onChanged: (v) {
-                final parsed = int.tryParse(v);
-                delay = parsed != null && parsed >= 0 ? parsed : delay;
-              },
-            ),
-
-            const SizedBox(height: 32),
-
-            // ===== ABRIR CÁMARA =====
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CameraScreen(
-                      camera: usableCameras[selectedCameraIndex],
-                      resolution: resolution,
-                      duration: duration,
-                      delay: delay,
-                    ),
-                  ),
-                );
-              },
-              child: const Text(
+              deco
