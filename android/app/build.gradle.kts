@@ -1,16 +1,16 @@
 plugins {
-    id 'com.android.application'
-    id 'kotlin-android'
-    id 'com.google.gms.google-services'
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "com.google.gms.google-services"
 }
 
 android {
-    namespace "com.javierdiazrecreo.app360"
+    namespace "com.party360.app"
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.javierdiazrecreo.app360"
-        minSdk 21
+        applicationId "com.party360.app"
+        minSdk 23
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -19,11 +19,13 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
 
 dependencies {
-    implementation platform("com.google.firebase:firebase-bom:33.5.1")
+    implementation platform("com.google.firebase:firebase-bom:33.7.0")
     implementation "com.google.firebase:firebase-storage"
 }
