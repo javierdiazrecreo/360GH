@@ -1,48 +1,29 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'com.google.gms.google-services'
 }
 
 android {
-    namespace = "com.party360.app"
-    compileSdk = 36
+    namespace "com.javierdiazrecreo.app360"
+    compileSdk 34
 
     defaultConfig {
-        applicationId = "com.party360.app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = 36
-        versionCode = 4
-        versionName = "1.0"
-
-        // Flutter maneja multidex automáticamente si es necesario
-        multiDexEnabled = true
+        applicationId "com.javierdiazrecreo.app360"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
     }
 
     buildTypes {
         release {
-            // Usamos la firma debug por ahora (válido para GitHub Actions)
-            signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            signingConfig signingConfigs.debug
         }
     }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-}
-
-flutter {
-    source = "../.."
 }
 
 dependencies {
-    // ❌ NO agregar nada aquí manualmente
-    // Flutter, Firebase y plugins se inyectan automáticamente
+    implementation platform("com.google.firebase:firebase-bom:33.5.1")
+    implementation "com.google.firebase:firebase-storage"
 }
