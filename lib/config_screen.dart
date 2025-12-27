@@ -11,7 +11,7 @@ class ConfigScreen extends StatefulWidget {
 }
 
 class _ConfigScreenState extends State<ConfigScreen> {
-  late List<CameraDescription> usableCameras;
+  List<CameraDescription> usableCameras = [];
   int selectedCameraIndex = 0;
 
   ResolutionPreset resolution = ResolutionPreset.high;
@@ -34,18 +34,35 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   String cameraLabel(CameraDescription cam) {
-    return cam.lensDirection == CameraLensDirection.back
-        ? "Trasera"
-        : "Frontal";
+    switch (cam.lensDirection) {
+      case CameraLensDirection.back:
+        return "Trasera";
+      case CameraLensDirection.front:
+        return "Frontal";
+      default:
+        return "Otra";
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 🔴 GUARDA CRÍTICA
+    if (usableCameras.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            "No se detectaron cámaras",
+            style: TextStyle(fontSize: 18),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text("Configuración")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
             // ===== CÁMARA =====
             DropdownButtonFormField<int>(
@@ -102,7 +119,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   const InputDecoration(labelText: "Duración (segundos)"),
               onChanged: (v) {
                 final parsed = int.tryParse(v);
-                duration = parsed != null && parsed > 0 ? parsed : 10;
+                duration = parsed != null && parsed > 0 ? parsed : duration;
               },
             ),
 
@@ -116,11 +133,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   const InputDecoration(labelText: "Delay (segundos)"),
               onChanged: (v) {
                 final parsed = int.tryParse(v);
-                delay = parsed != null && parsed >= 0 ? parsed : 3;
+                delay = parsed != null && parsed >= 0 ? parsed : delay;
               },
             ),
 
-            const Spacer(),
+            const SizedBox(height: 32),
 
             // ===== ABRIR CÁMARA =====
             ElevatedButton(
@@ -141,13 +158,3 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 );
               },
               child: const Text(
-                "Abrir cámara",
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
