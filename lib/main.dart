@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-import 'firebase_options.dart';
 import 'config_screen.dart';
 
 late List<CameraDescription> cameras;
@@ -10,14 +8,10 @@ late List<CameraDescription> cameras;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Inicialización obligatoria de Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // 🔥 ESTE ES EL PASO CLAVE
+  await Firebase.initializeApp();
 
-  // 📷 Carga de cámaras disponibles
   cameras = await availableCameras();
-
   runApp(const MyApp());
 }
 
