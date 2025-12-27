@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.party360.app"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = 4
         versionName = "1.0"
