@@ -3,23 +3,35 @@ import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'config_screen.dart';
 
-late List<CameraDescription> cameras;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  cameras = await availableCameras();
-  runApp(const MyApp());
+
+  List<CameraDescription> cameras = [];
+
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase init error: $e");
+  }
+
+  try {
+    cameras = await availableCameras();
+    debugPrint("Cameras found: ${cameras.length}");
+  } catch (e) {
+    debugPrint("Camera error: $e");
+  }
+
+  runApp(MyApp(cameras: cameras));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final List<CameraDescription> cameras;
+  const MyApp({super.key, required this.cameras});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: '360Party',
       home: ConfigScreen(cameras: cameras),
     );
   }
