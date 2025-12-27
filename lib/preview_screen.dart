@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'camera_screen.dart';
 import 'services/upload_service.dart';
-import 'package:uuid/uuid.dart';
 
 class PreviewScreen extends StatefulWidget {
   final String videoPath;
@@ -35,7 +34,8 @@ class _PreviewScreenState extends State<PreviewScreen> {
       status = 'Subiendo video…';
     });
 
-    final sessionId = const Uuid().v4();
+    // sessionId simple y robusto (sin packages)
+    final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
 
     try {
       final url = await UploadService.uploadVideo(
@@ -47,10 +47,10 @@ class _PreviewScreenState extends State<PreviewScreen> {
         status = 'Upload completo ✅';
       });
 
-      debugPrint('VIDEO URL: $url');
       debugPrint('SESSION ID: $sessionId');
+      debugPrint('DOWNLOAD URL: $url');
 
-      // 👉 Próximo paso: disparar cloud / mostrar QR
+      // 🔜 aquí luego dispararemos cloud / QR
     } catch (e) {
       setState(() {
         status = 'Error al subir ❌';
@@ -69,12 +69,20 @@ class _PreviewScreenState extends State<PreviewScreen> {
         children: [
           Expanded(
             child: Center(
-              child: AspectRatio(
-                aspectRatio: 9 / 16,
-                child: VideoPlayerWidget(videoPath: widget.videoPath),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.videocam, color: Colors.white, size: 80),
+                  SizedBox(height: 12),
+                  Text(
+                    'Video grabado',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ],
               ),
             ),
           ),
+
           if (status.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8),
@@ -83,6 +91,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
             ),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -116,6 +125,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 20),
         ],
       ),
