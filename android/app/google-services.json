@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "440763478814",
+    "project_id": "party-5baed",
+    "storage_bucket": "party-5baed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:440763478814:android:7969bbfceca6eabd618f0f",
+        "android_client_info": {
+          "package_name": "com.party360.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6NaP5TYZzibDzaNoPCTkcfvafaGkxjHA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
