@@ -1,6 +1,6 @@
 plugins {
     id "com.android.application"
-    id "com.google.gms.google-services" // 1. Plugin de Firebase añadido
+    id "com.google.gms.google-services"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -38,12 +38,11 @@ android {
     }
 
     sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        main.java.srcDirs += 'src/main/java'
     }
 
     defaultConfig {
         applicationId "com.party360.app"
-        // 2. Subido a 21 para compatibilidad con Firebase y Camera
         minSdkVersion 21 
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
@@ -52,7 +51,6 @@ android {
 
     buildTypes {
         release {
-            // Se usa debug para facilitar la compilación inicial en GitHub
             signingConfig signingConfigs.debug
         }
     }
@@ -63,6 +61,5 @@ flutter {
 }
 
 dependencies {
-    // ESTA LÍNEA ES LA QUE SOLUCIONA EL ERROR DE KOTLIN
-    implementation "io.flutter:flutter_embedding_release:1.0.0-+"
+    // Vacío, Flutter inyecta lo necesario automáticamente
 }
