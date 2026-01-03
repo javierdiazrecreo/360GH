@@ -61,5 +61,5 @@ flutter {
 }
 
 dependencies {
-    // Vacío, Flutter inyecta lo necesario automáticamente
+    // Mantener vacío
 }
