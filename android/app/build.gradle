@@ -62,4 +62,7 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    // ESTA LÍNEA ES LA QUE SOLUCIONA EL ERROR DE KOTLIN
+    implementation "io.flutter:flutter_embedding_release:1.0.0-+"
+}
