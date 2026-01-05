@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Archivos generados por Flutter en Android
+/android/app/src/main/java/io/
+/android/local.properties
