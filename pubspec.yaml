@@ -1,17 +1,15 @@
-name: party360v4
-description: "Camara 360 - Proyecto Restaurado"
+name: party360
+description: "Camara 360."
 publish_to: 'none'
+
 version: 1.0.0+19
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.10.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  
-  # Dependencias migradas de v1
   camera: ^0.10.6
   video_player: ^2.8.1
   path_provider: ^2.1.1
@@ -24,17 +22,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^2.0.0
   flutter_launcher_icons: ^0.13.1
 
-# Configuración de iconos que ya validamos
 flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icon/logo.png"
-  min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/logo.png"
 
 flutter:
   uses-material-design: true
