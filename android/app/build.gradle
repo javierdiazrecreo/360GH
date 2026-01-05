@@ -55,10 +55,6 @@ flutter {
 }
 
 dependencies {
-    // Estas líneas obligan a GitHub a reconocer Flutter en Java
-    implementation "io.flutter:flutter_embedding_release:1.0.0-+"
-    implementation "androidx.annotation:annotation:1.7.0"
-    
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-storage'
 }
