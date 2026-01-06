@@ -1,6 +1,5 @@
 plugins {
     id "com.android.application"
-    id "com.google.gms.google-services"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -58,3 +57,6 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-storage'
 }
+
+// Aplicar servicios de Google al final
+apply plugin: 'com.google.gms.google-services'
